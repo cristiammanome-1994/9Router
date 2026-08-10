@@ -12,28 +12,34 @@ export function gerarId(): string {
 
 export function verificarDuplicados(resultados: UploadResult[]): UploadResult[] {
   const chaves = new Map<string, UploadResult>();
-  const duplicados: UploadResult[] = [];
+  const resultado: UploadResult[] = [];
 
   for (const r of resultados) {
-    if (!r.result.success || !r.result.data?.chave) continue;
-    const chave = r.result.data.chave;
-    if (chaves.has(chave)) {
-      duplicados.push(r);
-      r.result.isDuplicate = true;
-    } else {
-      chaves.set(chave, r);
+    // Criar cópia para não mutar o original
+    const item = { ...r, result: { ...r.result } };
+    if (!item.result.success || !item.result.data?.chave) {
+      resultado.push(item);
+      continue;
     }
+    const chave = item.result.data.chave;
+    if (chaves.has(chave)) {
+      item.result.isDuplicate = true;
+    } else {
+      chaves.set(chave, item);
+    }
+    resultado.push(item);
   }
 
-  return duplicados;
+  return resultado;
 }
 
 export function gerarRelatorioCompilado(resultados: UploadResult[]): RelatorioCompilado {
+  // Não chamar verificarDuplicados novamente - assume que já foi chamado
   const notasValidas = resultados.filter(
     (r) => r.result.success && r.result.data && !r.result.isDuplicate && r.selected,
   );
 
-  const duplicados = verificarDuplicados(resultados);
+  const duplicados = resultados.filter((r) => r.result.isDuplicate);
 
   const totais: ConsolidadoTotais = {
     quantidadeNotas: notasValidas.length,

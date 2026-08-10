@@ -33,10 +33,42 @@ export function FileUpload({ onResults }: FileUploadProps) {
       const xmlFiles = Object.values(zip.files).filter(
         (f) => !f.dir && f.name.toLowerCase().endsWith('.xml'),
       );
+
+      if (xmlFiles.length === 0) {
+        results.push({
+          id: gerarId(),
+          fileName: file.name,
+          source: 'file',
+          result: {
+            success: false,
+            error: 'Nenhum arquivo XML encontrado no ZIP',
+            fileName: file.name,
+          },
+          selected: true,
+        });
+        return results;
+      }
+
       for (const xmlFile of xmlFiles) {
-        const text = await xmlFile.async('text');
-        const name = xmlFile.name.split('/').pop() || xmlFile.name;
-        results.push(processXmlText(text, name, 'zip', file.name));
+        try {
+          const text = await xmlFile.async('text');
+          const name = xmlFile.name.split('/').pop() || xmlFile.name;
+          results.push(processXmlText(text, name, 'zip', file.name));
+        } catch (err) {
+          const name = xmlFile.name.split('/').pop() || xmlFile.name;
+          results.push({
+            id: gerarId(),
+            fileName: name,
+            source: 'zip',
+            zipName: file.name,
+            result: {
+              success: false,
+              error: `Erro ao ler XML do ZIP: ${err instanceof Error ? err.message : String(err)}`,
+              fileName: name,
+            },
+            selected: true,
+          });
+        }
       }
     } catch (err) {
       results.push({
@@ -45,7 +77,7 @@ export function FileUpload({ onResults }: FileUploadProps) {
         source: 'file',
         result: {
           success: false,
-          error: `Erro ao descompactar: ${err instanceof Error ? err.message : String(err)}`,
+          error: `Erro ao descompactar ZIP: ${err instanceof Error ? err.message : String(err)}`,
           fileName: file.name,
         },
         selected: true,
@@ -65,8 +97,22 @@ export function FileUpload({ onResults }: FileUploadProps) {
         const zipResults = await handleZip(file);
         allResults.push(...zipResults);
       } else if (lower.endsWith('.xml')) {
-        const text = await file.text();
-        allResults.push(processXmlText(text, file.name, 'file'));
+        try {
+          const text = await file.text();
+          allResults.push(processXmlText(text, file.name, 'file'));
+        } catch (err) {
+          allResults.push({
+            id: gerarId(),
+            fileName: file.name,
+            source: 'file',
+            result: {
+              success: false,
+              error: `Erro ao ler arquivo: ${err instanceof Error ? err.message : String(err)}`,
+              fileName: file.name,
+            },
+            selected: true,
+          });
+        }
       }
     }
 

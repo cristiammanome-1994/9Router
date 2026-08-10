@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { UploadResult, RelatorioCompilado, ViewMode } from './types';
 import { FileUpload } from './components/FileUpload';
 import { SummaryCards } from './components/SummaryCards';
@@ -18,13 +18,17 @@ function App() {
   const handleResults = useCallback((newResults: UploadResult[]) => {
     setResults((prev) => {
       const combined = [...prev, ...newResults];
-      // Detectar duplicados após adicionar
       return verificarDuplicados(combined);
     });
-    if (newResults.length > 0) {
-      setActiveId(newResults[0].id);
-    }
   }, []);
+
+  // Definir activeId após o estado atualizar
+  useEffect(() => {
+    if (results.length > 0 && !activeId) {
+      const firstSuccess = results.find((r) => r.result.success);
+      if (firstSuccess) setActiveId(firstSuccess.id);
+    }
+  }, [results, activeId]);
 
   const handleClear = useCallback(() => {
     setResults([]);
@@ -47,12 +51,15 @@ function App() {
   }, []);
 
   const handleRemove = useCallback((id: string) => {
-    setResults((prev) => prev.filter((r) => r.id !== id));
-    if (activeId === id) {
-      const next = results.find((r) => r.id !== id && r.result.success);
-      setActiveId(next?.id || null);
-    }
-  }, [activeId, results]);
+    setResults((prev) => {
+      const filtered = prev.filter((r) => r.id !== id);
+      if (activeId === id) {
+        const next = filtered.find((r) => r.result.success);
+        setActiveId(next?.id || null);
+      }
+      return filtered;
+    });
+  }, [activeId]);
 
   const relatorio: RelatorioCompilado = useMemo(() => gerarRelatorioCompilado(results), [results]);
   const currentResult = results.find((r) => r.id === activeId)?.result;
