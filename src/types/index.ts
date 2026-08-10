@@ -131,4 +131,151 @@ export interface RelatorioCompilado {
   notas: UploadResult[];
 }
 
-export type ViewMode = 'individual' | 'compilado';
+export type ViewMode = 'individual' | 'compilado' | 'simulacao' | 'fornecedores';
+
+export interface FornecedorResumo {
+  cnpj: string;
+  nome: string;
+  uf: string;
+  municipio: string;
+  quantidadeNotas: number;
+  quantidadeItens: number;
+  valorTotal: number;
+  cargaTributariaAtual: number;
+  cargaTributariaNova: number;
+  diferencial: number;
+  cbsTotal: number;
+  ibsTotal: number;
+  icmsTotal: number;
+  ipiTotal: number;
+  pisTotal: number;
+  cofinsTotal: number;
+  cargaPercentualAtual: number;
+  cargaPercentualNova: number;
+  ncms: string[];
+  categorias: string[];
+}
+
+export interface AnaliseFornecedores {
+  fornecedores: FornecedorResumo[];
+  totaisGeral: {
+    quantidadeFornecedores: number;
+    quantidadeNotas: number;
+    quantidadeItens: number;
+    valorTotal: number;
+    cargaTributariaAtual: number;
+    cargaTributariaNova: number;
+    diferencial: number;
+  };
+}
+
+export interface AliquotaCustomizada {
+  ncmPrefix: string;
+  descricao: string;
+  cbs: number;
+  ibs: number;
+  cashback: number;
+}
+
+export interface AliquotasSimulacao {
+  padrao: { cbs: number; ibs: number };
+  categorias: AliquotaCustomizada[];
+}
+
+export const ALIQUOTAS_PADRAO: AliquotasSimulacao = {
+  padrao: { cbs: 9.65, ibs: 9.65 },
+  categorias: [
+    { ncmPrefix: '0000', descricao: 'Alíquota Zero (Anexo I)', cbs: 0, ibs: 0, cashback: 0 },
+    { ncmPrefix: '0001', descricao: 'Cesta Básica (Redução)', cbs: 0, ibs: 0, cashback: 100 },
+    { ncmPrefix: '0101', descricao: 'Carnes Frescas', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '0201', descricao: 'Carnes Frescas', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '0202', descricao: 'Carnes Frescas', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '0203', descricao: 'Carnes Frescas', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '0401', descricao: 'Leite e Laticínios', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '0402', descricao: 'Leite e Laticínios', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '0403', descricao: 'Leite e Laticínios', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '0406', descricao: 'Leite e Laticínios', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '0701', descricao: 'Produtos Hortícolas', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '0702', descricao: 'Produtos Hortícolas', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '0703', descricao: 'Produtos Hortícolas', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '0712', descricao: 'Produtos Hortícolas', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '0808', descricao: 'Frutas Frescas', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '1101', descricao: 'Farinhas e Cereais', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '1102', descricao: 'Farinhas e Cereais', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '1901', descricao: 'Farinhas e Cereais', cbs: 1.45, ibs: 1.45, cashback: 100 },
+    { ncmPrefix: '3001', descricao: 'Medicamentos', cbs: 1.45, ibs: 1.45, cashback: 50 },
+    { ncmPrefix: '3002', descricao: 'Medicamentos', cbs: 1.45, ibs: 1.45, cashback: 50 },
+    { ncmPrefix: '3003', descricao: 'Medicamentos', cbs: 1.45, ibs: 1.45, cashback: 50 },
+    { ncmPrefix: '3004', descricao: 'Medicamentos', cbs: 1.45, ibs: 1.45, cashback: 50 },
+    { ncmPrefix: '3005', descricao: 'Medicamentos', cbs: 1.45, ibs: 1.45, cashback: 50 },
+    { ncmPrefix: '3006', descricao: 'Medicamentos', cbs: 1.45, ibs: 1.45, cashback: 50 },
+    { ncmPrefix: '8408', descricao: 'Motores Industrializados', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '8703', descricao: 'Veículos Automóveis', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '8708', descricao: 'Partes de Veículos', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '8471', descricao: 'Equipamentos Eletrônicos', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '8517', descricao: 'Equipamentos Eletrônicos', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '8528', descricao: 'Equipamentos Eletrônicos', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '2201', descricao: 'Águas e Bebidas', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '2202', descricao: 'Bebidas Não Alcoólicas', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '2203', descricao: 'Cervejas', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '2204', descricao: 'Vinhos', cbs: 19.3, ibs: 19.3, cashback: 0 },
+    { ncmPrefix: '2208', descricao: 'Bebidas Destiladas', cbs: 19.3, ibs: 19.3, cashback: 0 },
+    { ncmPrefix: '2710', descricao: 'Combustíveis', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '2711', descricao: 'Gás de Petróleo', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '6109', descricao: 'Vestuário e Têxteis', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '6201', descricao: 'Vestuário e Têxteis', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '6203', descricao: 'Vestuário e Têxteis', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '6204', descricao: 'Vestuário e Têxteis', cbs: 9.65, ibs: 9.65, cashback: 0 },
+  ],
+};
+
+export type RegimeTributario = 'simples' | 'simples-hibrido' | 'lucro-presumido' | 'lucro-real';
+
+export interface AliquotasRegime {
+  irpj: number;
+  csll: number;
+  pis: number;
+  cofins: number;
+  cpp: number;
+  icms: number;
+  iss: number;
+  ipi: number;
+}
+
+export interface ParametrosEmpresa {
+  faturamentoAnual: number;
+  folhaPagamento: number;
+  regimeAtual: RegimeTributario;
+  uf: string;
+  municipio: string;
+  atividadePrincipal: 'comercio' | 'industria' | 'servicos' | 'misto';
+  anexoSimples?: 'I' | 'II' | 'III' | 'IV' | 'V';
+}
+
+export interface SimulacaoRegime {
+  regime: RegimeTributario;
+  nome: string;
+  descricao: string;
+  cargas: {
+    irpj: number;
+    csll: number;
+    pis: number;
+    cofins: number;
+    cpp: number;
+    icms: number;
+    iss: number;
+    ipi: number;
+    total: number;
+  };
+  cargaEfetivaPercentual: number;
+  economiaVsAtual: number;
+  viavel: boolean;
+  observacoes: string[];
+}
+
+export interface ComparativoRegimes {
+  empresa: ParametrosEmpresa;
+  simulacoes: SimulacaoRegime[];
+  recomendado: SimulacaoRegime;
+  economiaMaxima: number;
+}

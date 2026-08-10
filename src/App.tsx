@@ -1,19 +1,37 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import type { UploadResult, RelatorioCompilado, ViewMode } from './types';
+import type { UploadResult, RelatorioCompilado, ViewMode, ParametrosEmpresa, ComparativoRegimes, AnaliseFornecedores } from './types';
 import { FileUpload } from './components/FileUpload';
 import { SummaryCards } from './components/SummaryCards';
 import { ItemTable } from './components/ItemTable';
 import { ErrorList } from './components/DocumentTabs';
 import { DocumentSidebar } from './components/DocumentSidebar';
 import { RelatorioCompiladoView } from './components/RelatorioCompilado';
+import { ComparativoRegimesView } from './components/ComparativoRegimes';
+import { FornecedoresView } from './components/FornecedoresView';
 import { gerarRelatorioCompilado, verificarDuplicados } from './utils/consolidacao';
+import { compararRegimes, getRegimeAtualFromNFes } from './utils/simuladorRegimes';
+import { analisarFornecedores } from './utils/fornecedores';
 import './App.css';
+
+// Parâmetros padrão iniciais
+const PARAMETROS_INICIAIS: ParametrosEmpresa = {
+  faturamentoAnual: 0,
+  folhaPagamento: 0,
+  regimeAtual: 'lucro-presumido',
+  uf: 'SP',
+  municipio: 'São Paulo',
+  atividadePrincipal: 'comercio',
+};
+
 
 function App() {
   const [results, setResults] = useState<UploadResult[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('individual');
   const [showSidebar, setShowSidebar] = useState(true);
+  const [simulacaoParams, setSimulacaoParams] = useState<ParametrosEmpresa>(PARAMETROS_INICIAIS);
+  const [comparativo, setComparativo] = useState<ComparativoRegimes | null>(null);
+  const [analiseFornecedores, setAnaliseFornecedores] = useState<AnaliseFornecedores | null>(null);
 
   const handleResults = useCallback((newResults: UploadResult[]) => {
     setResults((prev) => {
@@ -30,9 +48,52 @@ function App() {
     }
   }, [results, activeId]);
 
+  // Atualizar parâmetros de simulação baseado nos dados das NF-es
+  useEffect(() => {
+    const relatorio = gerarRelatorioCompilado(results);
+    if (relatorio.totais.valorTotal > 0) {
+      setSimulacaoParams((prev) => ({
+        ...prev,
+        faturamentoAnual: prev.faturamentoAnual || relatorio.totais.valorTotal * 12,
+        folhaPagamento: prev.folhaPagamento || relatorio.totais.valorTotal * 1.8, // ~15% do faturamento
+        regimeAtualDetectado: getRegimeAtualFromNFes({
+          icmsTotal: relatorio.totais.icmsTotal,
+          ipiTotal: relatorio.totais.ipiTotal,
+          pisTotal: relatorio.totais.pisTotal,
+          cofinsTotal: relatorio.totais.cofinsTotal,
+        }),
+      }));
+    }
+  }, [results]);
+
+  // Calcular comparativo quando parâmetros mudam
+  useEffect(() => {
+    const relatorio = gerarRelatorioCompilado(results);
+    if (relatorio.totais.valorTotal > 0) {
+      const comp = compararRegimes(simulacaoParams, {
+        valorTotal: relatorio.totais.valorTotal,
+        icmsTotal: relatorio.totais.icmsTotal,
+        ipiTotal: relatorio.totais.ipiTotal,
+        pisTotal: relatorio.totais.pisTotal,
+        cofinsTotal: relatorio.totais.cofinsTotal,
+      });
+      setComparativo(comp);
+    }
+  }, [simulacaoParams, results]);
+
+  // Calcular análise de fornecedores
+  useEffect(() => {
+    if (results.length > 0) {
+      const analise = analisarFornecedores(results);
+      setAnaliseFornecedores(analise);
+    }
+  }, [results]);
+
   const handleClear = useCallback(() => {
     setResults([]);
     setActiveId(null);
+    setComparativo(null);
+    setAnaliseFornecedores(null);
   }, []);
 
   const handleSelect = useCallback((id: string) => {
@@ -60,6 +121,10 @@ function App() {
       return filtered;
     });
   }, [activeId]);
+
+  const handleParamsChange = useCallback((partial: Partial<ParametrosEmpresa>) => {
+    setSimulacaoParams((prev) => ({ ...prev, ...partial }));
+  }, []);
 
   const relatorio: RelatorioCompilado = useMemo(() => gerarRelatorioCompilado(results), [results]);
   const currentResult = results.find((r) => r.id === activeId)?.result;
@@ -105,6 +170,18 @@ function App() {
                 >
                   Relatório Compilado
                 </button>
+                <button
+                  className={viewMode === 'simulacao' ? 'active' : ''}
+                  onClick={() => setViewMode('simulacao')}
+                >
+                  Simulador de Regimes
+                </button>
+                <button
+                  className={viewMode === 'fornecedores' ? 'active' : ''}
+                  onClick={() => setViewMode('fornecedores')}
+                >
+                  Análise de Fornecedores
+                </button>
               </div>
               <button className="clear-btn" onClick={handleClear}>
                 Limpar todos
@@ -136,6 +213,22 @@ function App() {
           <div className="content-area" style={{ flex: showSidebar ? '1' : '1', minWidth: 0 }}>
             {viewMode === 'compilado' ? (
               <RelatorioCompiladoView relatorio={relatorio} />
+            ) : viewMode === 'simulacao' ? (
+              comparativo ? (
+                <ComparativoRegimesView comparativo={comparativo} onParamsChange={handleParamsChange} />
+              ) : (
+                <div className="empty-selection">
+                  <p>Carregue NF-es para habilitar o simulador de regimes.</p>
+                </div>
+              )
+            ) : viewMode === 'fornecedores' ? (
+              analiseFornecedores ? (
+                <FornecedoresView analise={analiseFornecedores} />
+              ) : (
+                <div className="empty-selection">
+                  <p>Carregue NF-es para habilitar a análise de fornecedores.</p>
+                </div>
+              )
             ) : hasData && currentResult.data ? (
               <>
                 <SummaryCards data={currentResult.data} />
@@ -158,7 +251,7 @@ function App() {
                   <div className="info-card">
                     <div className="info-number">3</div>
                     <h3>Comparativo</h3>
-                    <p>Visualize individualmente por nota ou o relatório compilado consolidado com detalhamento por categoria e NCM.</p>
+                    <p>Visualize individualmente por nota, o relatório compilado consolidado ou simule regimes tributários.</p>
                   </div>
                 </div>
 
