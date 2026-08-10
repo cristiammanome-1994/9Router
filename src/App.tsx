@@ -21,6 +21,9 @@ const PARAMETROS_INICIAIS: ParametrosEmpresa = {
   uf: 'SP',
   municipio: 'São Paulo',
   atividadePrincipal: 'comercio',
+  aliquotaCbsManual: 9.65,
+  aliquotaIbsManual: 9.65,
+  usarAliquotasManuais: false,
 };
 
 

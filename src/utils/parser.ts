@@ -40,72 +40,88 @@ interface CategoriaConfig {
   cbs: number; // alíquota CBS (%)
   ibs: number; // alíquota IBS (%)
   descricao: string;
+  isReduzida?: boolean; // Anexo II - redução 60%
+  isZero?: boolean; // Anexo I - alíquota zero
+  isSeletivo?: boolean; // Anexo IV - Imposto Seletivo (tratado separadamente)
 }
 
 function getCategoriaTributaria(ncm: string): CategoriaConfig {
   const n = ncm.replace(/\D/g, '').substring(0, 4);
 
+  // Alíquotas conforme Lei 14.988/2024:
+  // - Padrão: CBS 9.65% + IBS 9.65% = 19.3%
+  // - Reduzida (Anexo II, red. 60%): CBS 3.86% + IBS 3.86% = 7.72%
+  // - Zero (Anexo I): 0%
+  // - Seletivo (Anexo IV): tratado em módulo separado
+
+  const ALIQ_PADRAO_CBS = 9.65;
+  const ALIQ_PADRAO_IBS = 9.65;
+  const ALIQ_REDUZIDA_CBS = 3.86; // 9.65 * 0.4
+  const ALIQ_REDUZIDA_IBS = 3.86; // 9.65 * 0.4
+  const ALIQ_ZERO = 0;
+
   // Tabela simplificada - categorias com alíquotas específicas
   const categorias: Record<string, CategoriaConfig> = {
     // Alíquota zero - item 1 do Anexo I da Lei 14.988/2024
-    '0000': { cbs: 0, ibs: 0, descricao: 'Alíquota Zero (Anexo I)' },
-    // Cesta básica - redução (item 2 do Anexo I)
-    '0001': { cbs: 0, ibs: 0, descricao: 'Cesta Básica de Alimentos (Redução)' },
-    // Carnes frescas
-    '0101': { cbs: 1.45, ibs: 1.45, descricao: 'Carnes Frescas' },
-    '0201': { cbs: 1.45, ibs: 1.45, descricao: 'Carnes Frescas' },
-    '0202': { cbs: 1.45, ibs: 1.45, descricao: 'Carnes Frescas' },
-    '0203': { cbs: 1.45, ibs: 1.45, descricao: 'Carnes Frescas' },
-    // Leite e laticínios
-    '0401': { cbs: 1.45, ibs: 1.45, descricao: 'Leite e Laticínios' },
-    '0402': { cbs: 1.45, ibs: 1.45, descricao: 'Leite e Laticínios' },
-    '0403': { cbs: 1.45, ibs: 1.45, descricao: 'Leite e Laticínios' },
-    '0406': { cbs: 1.45, ibs: 1.45, descricao: 'Leite e Laticínios' },
-    // Hortifruti
-    '0701': { cbs: 1.45, ibs: 1.45, descricao: 'Produtos Hortícolas' },
-    '0702': { cbs: 1.45, ibs: 1.45, descricao: 'Produtos Hortícolas' },
-    '0703': { cbs: 1.45, ibs: 1.45, descricao: 'Produtos Hortícolas' },
-    '0712': { cbs: 1.45, ibs: 1.45, descricao: 'Produtos Hortícolas' },
-    '0808': { cbs: 1.45, ibs: 1.45, descricao: 'Frutas Frescas' },
-    // Farinhas
-    '1101': { cbs: 1.45, ibs: 1.45, descricao: 'Farinhas e Cereais' },
-    '1102': { cbs: 1.45, ibs: 1.45, descricao: 'Farinhas e Cereais' },
-    '1901': { cbs: 1.45, ibs: 1.45, descricao: 'Farinhas e Cereais' },
-    // Medicamentos e produtos farmacêuticos
-    '3001': { cbs: 1.45, ibs: 1.45, descricao: 'Medicamentos' },
-    '3002': { cbs: 1.45, ibs: 1.45, descricao: 'Medicamentos' },
-    '3003': { cbs: 1.45, ibs: 1.45, descricao: 'Medicamentos' },
-    '3004': { cbs: 1.45, ibs: 1.45, descricao: 'Medicamentos' },
-    '3005': { cbs: 1.45, ibs: 1.45, descricao: 'Medicamentos' },
-    '3006': { cbs: 1.45, ibs: 1.45, descricao: 'Medicamentos' },
+    '0000': { cbs: ALIQ_ZERO, ibs: ALIQ_ZERO, descricao: 'Alíquota Zero (Anexo I)', isZero: true },
+    // Cesta básica - alíquota zero (item 2 do Anexo I)
+    '0001': { cbs: ALIQ_ZERO, ibs: ALIQ_ZERO, descricao: 'Cesta Básica (Alíquota Zero - Anexo I)', isZero: true },
+    // Carnes frescas - REDUZIDA 60% (Anexo II)
+    '0101': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Carnes Frescas (Red. 60%)', isReduzida: true },
+    '0201': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Carnes Frescas (Red. 60%)', isReduzida: true },
+    '0202': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Carnes Frescas (Red. 60%)', isReduzida: true },
+    '0203': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Carnes Frescas (Red. 60%)', isReduzida: true },
+    // Leite e laticínios - REDUZIDA 60% (Anexo II)
+    '0401': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Leite e Laticínios (Red. 60%)', isReduzida: true },
+    '0402': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Leite e Laticínios (Red. 60%)', isReduzida: true },
+    '0403': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Leite e Laticínios (Red. 60%)', isReduzida: true },
+    '0406': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Queijos (Red. 60%)', isReduzida: true },
+    // Hortifruti - REDUZIDA 60% (Anexo II)
+    '0701': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Batatas (Red. 60%)', isReduzida: true },
+    '0702': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Tomates (Red. 60%)', isReduzida: true },
+    '0703': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Cebolas/Alhos (Red. 60%)', isReduzida: true },
+    '0712': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Hortícolas Secos (Red. 60%)', isReduzida: true },
+    '0808': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Maçãs/Pêras (Red. 60%)', isReduzida: true },
+    // Farinhas - REDUZIDA 60% (Anexo II)
+    '1101': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Farinha de Trigo (Red. 60%)', isReduzida: true },
+    '1102': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Outras Farinhas (Red. 60%)', isReduzida: true },
+    '1901': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Prep. de Cereais (Red. 60%)', isReduzida: true },
+    // Medicamentos - REDUZIDA 60% (Anexo II)
+    '3001': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Medicamentos (Red. 60%)', isReduzida: true },
+    '3002': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Sangue/Vacinas (Red. 60%)', isReduzida: true },
+    '3003': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Medicamentos (Red. 60%)', isReduzida: true },
+    '3004': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Medicamentos (Red. 60%)', isReduzida: true },
+    '3005': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Curativos (Red. 60%)', isReduzida: true },
+    '3006': { cbs: ALIQ_REDUZIDA_CBS, ibs: ALIQ_REDUZIDA_IBS, descricao: 'Farm. Diversos (Red. 60%)', isReduzida: true },
     // Produtos industrializados (alíquota padrão)
-    '8408': { cbs: 9.65, ibs: 9.65, descricao: 'Motores Industrializados' },
-    '8703': { cbs: 9.65, ibs: 9.65, descricao: 'Veículos Automóveis' },
-    '8708': { cbs: 9.65, ibs: 9.65, descricao: 'Partes de Veículos' },
+    '8408': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Motores Diesel' },
+    '8703': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Veículos Automóveis' },
+    '8708': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Partes de Veículos' },
     // Eletrônicos
-    '8471': { cbs: 9.65, ibs: 9.65, descricao: 'Equipamentos Eletrônicos' },
-    '8517': { cbs: 9.65, ibs: 9.65, descricao: 'Equipamentos Eletrônicos' },
-    '8528': { cbs: 9.65, ibs: 9.65, descricao: 'Equipamentos Eletrônicos' },
-    // Bebidas
-    '2201': { cbs: 9.65, ibs: 9.65, descricao: 'Águas e Bebidas' },
-    '2202': { cbs: 9.65, ibs: 9.65, descricao: 'Bebidas Não Alcoólicas' },
-    '2203': { cbs: 9.65, ibs: 9.65, descricao: 'Cervejas' },
-    '2204': { cbs: 19.3, ibs: 19.3, descricao: 'Vinhos' },
-    '2208': { cbs: 19.3, ibs: 19.3, descricao: 'Bebidas Destiladas' },
+    '8471': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Equip. Informática' },
+    '8517': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Telefones/Comunicação' },
+    '8528': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Monitores/TV' },
+    // Bebidas - Água/Refrigerante/Cerveja = PADRÃO
+    '2201': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Águas' },
+    '2202': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Refrigerantes/Sucos' },
+    '2203': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Cervejas' },
+    // Vinhos e Destilados = PADRÃO (Imposto Seletivo é tratado em módulo separado)
+    '2204': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Vinhos (IS separado)' },
+    '2208': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Destilados (IS separado)' },
     // Combustíveis
-    '2710': { cbs: 9.65, ibs: 9.65, descricao: 'Combustíveis' },
-    '2711': { cbs: 9.65, ibs: 9.65, descricao: 'Gás de Petróleo' },
+    '2710': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Combustíveis Líquidos' },
+    '2711': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Gás Natural/GLP' },
     // Roupas e têxteis
-    '6109': { cbs: 9.65, ibs: 9.65, descricao: 'Vestuário e Têxteis' },
-    '6201': { cbs: 9.65, ibs: 9.65, descricao: 'Vestuário e Têxteis' },
-    '6203': { cbs: 9.65, ibs: 9.65, descricao: 'Vestuário e Têxteis' },
-    '6204': { cbs: 9.65, ibs: 9.65, descricao: 'Vestuário e Têxteis' },
+    '6109': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Camisetas (Malha)' },
+    '6201': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Sobretudos (Tecido)' },
+    '6203': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Ternos (Tecido)' },
+    '6204': { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Tailleurs (Tecido)' },
   };
 
   if (categorias[n]) return categorias[n];
 
   // Alíquota padrão (CBS 9.65% + IBS 9.65% = 19.3% total)
-  return { cbs: 9.65, ibs: 9.65, descricao: 'Alíquota Padrão' };
+  return { cbs: ALIQ_PADRAO_CBS, ibs: ALIQ_PADRAO_IBS, descricao: 'Alíquota Padrão' };
 }
 
 // Configuração de cashback (item 4 do Anexo I da Lei 14.988/2024)
@@ -136,8 +152,14 @@ function extractItem(det: unknown): NFeItem {
 
   const numero = str(get(det, ['@_nItem']) || get(det, ['nItem']));
   const ncm = str(get(prod, ['NCM']));
-  const valorTotal = num(get(prod, ['vProd']));
-  const valorDesconto = num(get(prod, ['vDesc']) || get(prod, ['vDesc']));
+  const valorProd = num(get(prod, ['vProd']));
+  const valorFrete = num(get(prod, ['vFrete']));
+  const valorSeguro = num(get(prod, ['vSeg']));
+  const valorOutros = num(get(prod, ['vOutro']));
+  const valorII = num(get(prod, ['vII'])); // Imposto de Importação
+  const valorIPI = num(get(prod, ['vIPI'])); // IPI (já incluso em vIPI do grupo IPI)
+  const valorDesconto = num(get(prod, ['vDesc']));
+  const valorDescCond = num(get(prod, ['vDescCond'])); // Desconto condicionado
 
   // Impostos atuais
   const icmsBase = num(get(icmsTipo, ['vBC']));
@@ -150,21 +172,29 @@ function extractItem(det: unknown): NFeItem {
   const cofinsAliquota = num(get(cofinsTipo, ['pCOFINS']));
   const cofinsValor = num(get(cofinsTipo, ['vCOFINS']));
 
-  // Calcular CBS + IBS (reforma tributária)
+  // Calcular CBS + IBS (reforma tributária) - Base conforme Art. 13 Lei 14.988/2024
+  // Base = vProd + vFrete + vSeg + vOutro + vII + vIPI - vDesc - vDescCond
   const categoria = getCategoriaTributaria(ncm);
-  const baseCalculo = valorTotal - valorDesconto;
-  const cbsValor = (baseCalculo * categoria.cbs) / 100;
-  const ibsValor = (baseCalculo * categoria.ibs) / 100;
+  const baseCalculo = valorProd + valorFrete + valorSeguro + valorOutros + valorII + valorIPI - valorDesconto - valorDescCond;
+  const baseCalculoPositiva = Math.max(0, baseCalculo);
+
+  const cbsValor = (baseCalculoPositiva * categoria.cbs) / 100;
+  const ibsValor = (baseCalculoPositiva * categoria.ibs) / 100;
   const cbsIbsTotal = cbsValor + ibsValor;
+
+  // Imposto Seletivo (calculado separadamente, não incluso na base CBS/IBS)
+  const isSeletivo = categoria.isSeletivo === true;
 
   // Carga tributária atual vs nova
   const cargaTributariaAtual = icmsValor + ipiValor + pisValor + cofinsValor;
   const cargaTributariaNova = cbsIbsTotal;
   const diferencialCarga = cargaTributariaNova - cargaTributariaAtual;
 
+  // Cashback: apenas informativo (NÃO reduz base de cálculo do emitente)
+  // Cashback é devolução ao consumidor final (B2C), não crédito do emitente
   const cashbackPct = getCashback(ncm);
   const descricaoCategoria = cashbackPct > 0
-    ? `${categoria.descricao} (Cashback: ${cashbackPct}%)`
+    ? `${categoria.descricao} | Cashback consumidor: ${cashbackPct}% (não reduz base emitente)`
     : categoria.descricao;
 
   return {
@@ -176,8 +206,17 @@ function extractItem(det: unknown): NFeItem {
     quantidade: num(get(prod, ['qCom']) || get(prod, ['qTrib'])),
     unidade: str(get(prod, ['uCom']) || get(prod, ['uTrib'])),
     valorUnitario: num(get(prod, ['vUnCom']) || get(prod, ['vUnTrib'])),
-    valorTotal,
+    valorTotal: valorProd,
     desconto: valorDesconto,
+    // Novos campos para base CBS/IBS
+    valorFrete,
+    valorSeguro,
+    valorOutros,
+    valorII,
+    valorIPI,
+    valorDescCond,
+    baseCalculoCBSIBS: baseCalculoPositiva,
+    // Impostos atuais
     icmsBase,
     icmsAliquota,
     icmsValor,
@@ -187,11 +226,13 @@ function extractItem(det: unknown): NFeItem {
     pisValor,
     cofinsAliquota,
     cofinsValor,
+    // Reforma tributária
     cbsAliquota: categoria.cbs,
     cbsValor,
     ibsAliquota: categoria.ibs,
     ibsValor,
     cbsIbsTotal,
+    isSeletivo,
     cargaTributariaAtual,
     cargaTributariaNova,
     diferencialCarga,

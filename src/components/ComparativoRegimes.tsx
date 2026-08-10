@@ -1,6 +1,7 @@
 import type { ComparativoRegimes, SimulacaoRegime, ParametrosEmpresa } from '../types';
 import { formatCurrency, formatPercent } from '../utils/format';
 import { useState } from 'react';
+import { getRegimeAtualFromNFes } from '../utils/simuladorRegimes';
 
 interface ComparativoRegimesProps {
   comparativo: ComparativoRegimes;
@@ -79,7 +80,7 @@ export function ComparativoRegimesView({ comparativo, onParamsChange }: Comparat
   const [editMode, setEditMode] = useState(false);
   const params = comparativo.empresa;
   
-  const handleInputChange = (field: keyof ParametrosEmpresa, value: string | number) => {
+  const handleInputChange = (field: keyof ParametrosEmpresa, value: string | number | boolean) => {
     onParamsChange({ [field]: value });
   };
 
@@ -165,6 +166,45 @@ export function ComparativoRegimesView({ comparativo, onParamsChange }: Comparat
               <option value="V">Anexo V - Serviços</option>
             </select>
           </div>
+          <div className="param-field">
+            <label>
+              <input
+                type="checkbox"
+                checked={params.usarAliquotasManuais}
+                onChange={(e) => handleInputChange('usarAliquotasManuais', e.target.checked)}
+                disabled={!editMode}
+              />
+              Usar alíquotas manuais CBS/IBS
+            </label>
+          </div>
+          {params.usarAliquotasManuais && (
+            <>
+              <div className="param-field">
+                <label>Alíquota CBS Manual (%)</label>
+                <input
+                  type="number"
+                  value={params.aliquotaCbsManual ?? 9.65}
+                  onChange={(e) => handleInputChange('aliquotaCbsManual', Number(e.target.value))}
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  disabled={!editMode}
+                />
+              </div>
+              <div className="param-field">
+                <label>Alíquota IBS Manual (%)</label>
+                <input
+                  type="number"
+                  value={params.aliquotaIbsManual ?? 9.65}
+                  onChange={(e) => handleInputChange('aliquotaIbsManual', Number(e.target.value))}
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  disabled={!editMode}
+                />
+              </div>
+            </>
+          )}
         </div>
         <button className="edit-toggle" onClick={() => setEditMode(!editMode)}>
           {editMode ? 'Salvar parâmetros' : 'Editar parâmetros'}
@@ -272,10 +312,4 @@ export function ComparativoRegimesView({ comparativo, onParamsChange }: Comparat
       </div>
     </div>
   );
-}
-
-// Helper para detectar regime atual (simplificado)
-function getRegimeAtualFromNFes(params: any): string {
-  // Isso será preenchido pelo componente pai
-  return params.regimeAtualDetectado || 'A ser detectado';
 }

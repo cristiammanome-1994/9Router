@@ -9,6 +9,14 @@ export interface NFeItem {
   valorUnitario: number;
   valorTotal: number;
   desconto: number;
+  // Base CBS/IBS (Art. 13 Lei 14.988/2024)
+  valorFrete?: number;
+  valorSeguro?: number;
+  valorOutros?: number;
+  valorII?: number;
+  valorIPI?: number;
+  valorDescCond?: number;
+  baseCalculoCBSIBS?: number;
   // Impostos atuais
   icmsBase?: number;
   icmsAliquota?: number;
@@ -25,6 +33,7 @@ export interface NFeItem {
   ibsAliquota?: number;
   ibsValor?: number;
   cbsIbsTotal?: number;
+  isSeletivo?: boolean;
   cargaTributariaAtual?: number;
   cargaTributariaNova?: number;
   diferencialCarga?: number;
@@ -186,46 +195,46 @@ export const ALIQUOTAS_PADRAO: AliquotasSimulacao = {
   padrao: { cbs: 9.65, ibs: 9.65 },
   categorias: [
     { ncmPrefix: '0000', descricao: 'Alíquota Zero (Anexo I)', cbs: 0, ibs: 0, cashback: 0 },
-    { ncmPrefix: '0001', descricao: 'Cesta Básica (Redução)', cbs: 0, ibs: 0, cashback: 100 },
-    { ncmPrefix: '0101', descricao: 'Carnes Frescas', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '0201', descricao: 'Carnes Frescas', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '0202', descricao: 'Carnes Frescas', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '0203', descricao: 'Carnes Frescas', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '0401', descricao: 'Leite e Laticínios', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '0402', descricao: 'Leite e Laticínios', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '0403', descricao: 'Leite e Laticínios', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '0406', descricao: 'Leite e Laticínios', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '0701', descricao: 'Produtos Hortícolas', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '0702', descricao: 'Produtos Hortícolas', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '0703', descricao: 'Produtos Hortícolas', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '0712', descricao: 'Produtos Hortícolas', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '0808', descricao: 'Frutas Frescas', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '1101', descricao: 'Farinhas e Cereais', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '1102', descricao: 'Farinhas e Cereais', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '1901', descricao: 'Farinhas e Cereais', cbs: 1.45, ibs: 1.45, cashback: 100 },
-    { ncmPrefix: '3001', descricao: 'Medicamentos', cbs: 1.45, ibs: 1.45, cashback: 50 },
-    { ncmPrefix: '3002', descricao: 'Medicamentos', cbs: 1.45, ibs: 1.45, cashback: 50 },
-    { ncmPrefix: '3003', descricao: 'Medicamentos', cbs: 1.45, ibs: 1.45, cashback: 50 },
-    { ncmPrefix: '3004', descricao: 'Medicamentos', cbs: 1.45, ibs: 1.45, cashback: 50 },
-    { ncmPrefix: '3005', descricao: 'Medicamentos', cbs: 1.45, ibs: 1.45, cashback: 50 },
-    { ncmPrefix: '3006', descricao: 'Medicamentos', cbs: 1.45, ibs: 1.45, cashback: 50 },
-    { ncmPrefix: '8408', descricao: 'Motores Industrializados', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '0001', descricao: 'Cesta Básica (Alíquota Zero - Anexo I)', cbs: 0, ibs: 0, cashback: 100 },
+    { ncmPrefix: '0101', descricao: 'Carnes Frescas (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '0201', descricao: 'Carnes Frescas (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '0202', descricao: 'Carnes Frescas (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '0203', descricao: 'Carnes Frescas (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '0401', descricao: 'Leite (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '0402', descricao: 'Leite Condensado/Em Pó (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '0403', descricao: 'Iogurtes (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '0406', descricao: 'Queijos (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '0701', descricao: 'Batatas (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '0702', descricao: 'Tomates (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '0703', descricao: 'Cebolas/Alhos (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '0712', descricao: 'Hortícolas Secos (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '0808', descricao: 'Maçãs/Pêras (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '1101', descricao: 'Farinha de Trigo (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '1102', descricao: 'Outras Farinhas (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '1901', descricao: 'Prep. de Cereais (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 100 },
+    { ncmPrefix: '3001', descricao: 'Órgãos/Hormônios (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 50 },
+    { ncmPrefix: '3002', descricao: 'Sangue/Vacinas (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 50 },
+    { ncmPrefix: '3003', descricao: 'Medicamentos (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 50 },
+    { ncmPrefix: '3004', descricao: 'Medicamentos (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 50 },
+    { ncmPrefix: '3005', descricao: 'Curativos (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 50 },
+    { ncmPrefix: '3006', descricao: 'Farm. Diversos (Red. 60%)', cbs: 3.86, ibs: 3.86, cashback: 50 },
+    { ncmPrefix: '8408', descricao: 'Motores Diesel', cbs: 9.65, ibs: 9.65, cashback: 0 },
     { ncmPrefix: '8703', descricao: 'Veículos Automóveis', cbs: 9.65, ibs: 9.65, cashback: 0 },
     { ncmPrefix: '8708', descricao: 'Partes de Veículos', cbs: 9.65, ibs: 9.65, cashback: 0 },
     { ncmPrefix: '8471', descricao: 'Equipamentos Eletrônicos', cbs: 9.65, ibs: 9.65, cashback: 0 },
     { ncmPrefix: '8517', descricao: 'Equipamentos Eletrônicos', cbs: 9.65, ibs: 9.65, cashback: 0 },
     { ncmPrefix: '8528', descricao: 'Equipamentos Eletrônicos', cbs: 9.65, ibs: 9.65, cashback: 0 },
-    { ncmPrefix: '2201', descricao: 'Águas e Bebidas', cbs: 9.65, ibs: 9.65, cashback: 0 },
-    { ncmPrefix: '2202', descricao: 'Bebidas Não Alcoólicas', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '2201', descricao: 'Águas', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '2202', descricao: 'Refrigerantes/Sucos', cbs: 9.65, ibs: 9.65, cashback: 0 },
     { ncmPrefix: '2203', descricao: 'Cervejas', cbs: 9.65, ibs: 9.65, cashback: 0 },
-    { ncmPrefix: '2204', descricao: 'Vinhos', cbs: 19.3, ibs: 19.3, cashback: 0 },
-    { ncmPrefix: '2208', descricao: 'Bebidas Destiladas', cbs: 19.3, ibs: 19.3, cashback: 0 },
-    { ncmPrefix: '2710', descricao: 'Combustíveis', cbs: 9.65, ibs: 9.65, cashback: 0 },
-    { ncmPrefix: '2711', descricao: 'Gás de Petróleo', cbs: 9.65, ibs: 9.65, cashback: 0 },
-    { ncmPrefix: '6109', descricao: 'Vestuário e Têxteis', cbs: 9.65, ibs: 9.65, cashback: 0 },
-    { ncmPrefix: '6201', descricao: 'Vestuário e Têxteis', cbs: 9.65, ibs: 9.65, cashback: 0 },
-    { ncmPrefix: '6203', descricao: 'Vestuário e Têxteis', cbs: 9.65, ibs: 9.65, cashback: 0 },
-    { ncmPrefix: '6204', descricao: 'Vestuário e Têxteis', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '2204', descricao: 'Vinhos (IS separado)', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '2208', descricao: 'Destilados (IS separado)', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '2710', descricao: 'Combustíveis Líquidos', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '2711', descricao: 'Gás Natural/GLP', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '6109', descricao: 'Camisetas (Malha)', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '6201', descricao: 'Sobretudos (Tecido)', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '6203', descricao: 'Ternos (Tecido)', cbs: 9.65, ibs: 9.65, cashback: 0 },
+    { ncmPrefix: '6204', descricao: 'Tailleurs (Tecido)', cbs: 9.65, ibs: 9.65, cashback: 0 },
   ],
 };
 
@@ -250,6 +259,10 @@ export interface ParametrosEmpresa {
   municipio: string;
   atividadePrincipal: 'comercio' | 'industria' | 'servicos' | 'misto';
   anexoSimples?: 'I' | 'II' | 'III' | 'IV' | 'V';
+  // Alíquotas manuais para simulação (opcional - sobrescreve catálogo)
+  aliquotaCbsManual?: number; // % CBS
+  aliquotaIbsManual?: number; // % IBS
+  usarAliquotasManuais?: boolean; // Flag para usar valores manuais
 }
 
 export interface SimulacaoRegime {
