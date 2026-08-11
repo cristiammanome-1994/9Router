@@ -60,7 +60,48 @@ const SIMPLES_ANEXOS = {
   },
 };
 
-// Alíquotas Lucro Presumido (base 32% comércio, 8% serviços para IRPJ; 12% CSLL)
+// Tabela de bases presumidas por atividade/CNAE (conforme IN RFB 1.700/2017)
+const BASE_PRESUMIDA_IRPJ_CSLL: Record<string, { irpj: number; csll: number }> = {
+  // Comércio
+  'comercio': { irpj: 32, csll: 32 },
+  'comercio-varejo': { irpj: 32, csll: 32 },
+  'comercio-atacado': { irpj: 32, csll: 32 },
+  
+  // Indústria
+  'industria': { irpj: 8, csll: 8 },
+  'industria-alimentos': { irpj: 8, csll: 8 },
+  'industria-textil': { irpj: 8, csll: 8 },
+  'industria-quimica': { irpj: 8, csll: 8 },
+  'industria-metalurgica': { irpj: 8, csll: 8 },
+  
+  // Serviços
+  'servicos': { irpj: 8, csll: 8 },
+  'servicos-transporte': { irpj: 8, csll: 8 },
+  'servicos-comunicacao': { irpj: 8, csll: 8 },
+  'servicos-financeiros': { irpj: 32, csll: 32 }, // Financeiras usam 32%
+  'servicos-saude': { irpj: 8, csll: 8 },
+  'servicos-educacao': { irpj: 8, csll: 8 },
+  'servicos-tecnologia': { irpj: 8, csll: 8 },
+  'servicos-profissionais': { irpj: 8, csll: 8 },
+  'servicos-limpeza': { irpj: 8, csll: 8 },
+  'servicos-seguranca': { irpj: 8, csll: 8 },
+  
+  // Construção
+  'construcao': { irpj: 8, csll: 8 },
+  'construcao-civil': { irpj: 8, csll: 8 },
+  
+  // Transporte
+  'transporte-carga': { irpj: 8, csll: 8 },
+  'transporte-passageiros': { irpj: 8, csll: 8 },
+  
+  // Agropecuária
+  'agropecuaria': { irpj: 8, csll: 8 },
+  
+  // Padrão (fallback)
+  'default': { irpj: 32, csll: 32 },
+};
+
+// Alíquotas Lucro Presumido (base variável conforme atividade)
 const ALIQUOTAS_LUCRO_PRESUMIDO: AliquotasRegime = {
   irpj: 15, // sobre base presumida
   csll: 9,  // sobre base presumida
@@ -83,6 +124,19 @@ const ALIQUOTAS_LUCRO_REAL: AliquotasRegime = {
   iss: 5,
   ipi: 5,
 };
+
+// Função para obter base presumida por atividade/CNAE
+function getBasePresumida(atividade: string, cnae?: string): { irpj: number; csll: number } {
+  // Se tiver CNAE, tentar buscar por código
+  if (cnae) {
+    const cnaePrefix = cnae.replace(/\D/g, '').substring(0, 4);
+    // TODO: Implementar lookup por CNAE específico quando catálogo estiver disponível
+  }
+  
+  // Buscar por atividade principal
+  const key = atividade.toLowerCase().replace(/\s+/g, '-');
+  return BASE_PRESUMIDA_IRPJ_CSLL[key] || BASE_PRESUMIDA_IRPJ_CSLL['default'];
+}
 
 function calcularAliquotaSimplesEfetiva(faturamentoAnual: number, anexo: keyof typeof SIMPLES_ANEXOS): number {
   const tabela = SIMPLES_ANEXOS[anexo];
@@ -123,7 +177,7 @@ function decomporSimples(aliquotaEfetiva: number, atividade: string): AliquotasR
   return result;
 }
 
-function calcularCargaRegime(
+export function calcularCargaRegime(
   regime: RegimeTributario,
   params: ParametrosEmpresa,
   totaisNFe: { valorTotal: number; icmsTotal: number; ipiTotal: number; pisTotal: number; cofinsTotal: number }
@@ -156,23 +210,29 @@ function calcularCargaRegime(
     case 'simples-hibrido': {
       if (faturamento > 4800000) {
         viavel = false;
-        observacoes.push('Faturamento excede limite do Simples para ICMS/ISS');
+        observacoes.push('Faturamento excede limite do Simples para ICMS/ISS (R$ 4,8M)');
       }
       const aliquotaEfetiva = calcularAliquotaSimplesEfetiva(faturamento, anexo);
       const simplesDecomposto = decomporSimples(aliquotaEfetiva, params.atividadePrincipal);
+      
+      // Simples Híbrido: ICMS/ISS no Simples + Federais no Lucro REAL (conforme LC 199/2023)
+      // IRPJ/CSLL: base real (lucro contábil) - alíquotas do Lucro Real
+      // PIS/COFINS: regime não cumulativo (Lucro Real)
+      // CPP: 20% sobre folha (com RAT/terceiros)
       aliquotas = {
-        irpj: ALIQUOTAS_LUCRO_PRESUMIDO.irpj,
-        csll: ALIQUOTAS_LUCRO_PRESUMIDO.csll,
-        pis: ALIQUOTAS_LUCRO_PRESUMIDO.pis,
-        cofins: ALIQUOTAS_LUCRO_PRESUMIDO.cofins,
-        cpp: ALIQUOTAS_LUCRO_PRESUMIDO.cpp,
-        icms: simplesDecomposto.icms,
-        iss: simplesDecomposto.iss,
-        ipi: ALIQUOTAS_LUCRO_PRESUMIDO.ipi,
+        irpj: ALIQUOTAS_LUCRO_REAL.irpj,      // 15% + adicional 10% > 240k
+        csll: ALIQUOTAS_LUCRO_REAL.csll,      // 9%
+        pis: ALIQUOTAS_LUCRO_REAL.pis,        // 1,65% não cumulativo
+        cofins: ALIQUOTAS_LUCRO_REAL.cofins,  // 7,6% não cumulativo
+        cpp: ALIQUOTAS_LUCRO_REAL.cpp,        // 20% sobre folha
+        icms: simplesDecomposto.icms,         // do Simples
+        iss: simplesDecomposto.iss,           // do Simples
+        ipi: ALIQUOTAS_LUCRO_REAL.ipi,        // 5% média
       };
       nome = 'Simples Híbrido';
-      descricao = `ICMS/ISS no Simples (Anexo ${anexo}) + Federais no Lucro Presumido`;
-      observacoes.push('Requer opção expressa; ICMS/ISS recolhidos via DAS, federais via DARF');
+      descricao = `ICMS/ISS no Simples (Anexo ${anexo}) + Federais no Lucro Real`;
+      observacoes.push('ICMS/ISS recolhidos via DAS; IRPJ/CSLL/PIS/COFINS no Lucro Real (DARF)');
+      observacoes.push('PIS/COFINS não cumulativos - créditos sobre insumos');
       break;
     }
     case 'lucro-presumido': {
@@ -180,11 +240,19 @@ function calcularCargaRegime(
         viavel = false;
         observacoes.push('Faturamento excede limite do Lucro Presumido (R$ 78M)');
       }
+      
+      // Obter base presumida por atividade/CNAE (A03)
+      const basePresumida = getBasePresumida(params.atividadePrincipal, params.cnaePrincipal);
+      
       aliquotas = { ...ALIQUOTAS_LUCRO_PRESUMIDO };
       nome = 'Lucro Presumido';
-      descricao = 'Base presumida: 32% (comércio) ou 8% (serviços) para IRPJ/CSLL';
-      if (params.atividadePrincipal === 'servicos') {
-        observacoes.push('Base IRPJ/CSLL reduzida para 8% na prestação de serviços');
+      descricao = `Base presumida IRPJ/CSLL: ${basePresumida.irpj}% (conforme atividade ${params.atividadePrincipal})`;
+      
+      // Aplicar base presumida específica
+      if (params.atividadePrincipal === 'servicos' || basePresumida.irpj === 8) {
+        observacoes.push(`Base IRPJ/CSLL reduzida para ${basePresumida.irpj}% na atividade ${params.atividadePrincipal}`);
+      } else {
+        observacoes.push(`Base IRPJ/CSLL padrão ${basePresumida.irpj}% para ${params.atividadePrincipal}`);
       }
       break;
     }
@@ -222,20 +290,32 @@ function calcularCargaRegime(
   const economiaVsAtual = cargaAtualProjetada - cargas.total;
 
   // Ajustes específicos por regime
-  if (regime === 'lucro-presumido' && params.atividadePrincipal === 'servicos') {
-    // Base reduzida para IRPJ/CSLL em serviços
-    cargas.irpj = baseFaturamento * 0.08 * 0.15; // 8% * 15%
-    cargas.csll = baseFaturamento * 0.08 * 0.09; // 8% * 9%
-    cargas.total = cargas.irpj + cargas.csll + cargas.pis + cargas.cofins + cargas.cpp + cargas.icms + cargas.iss + cargas.ipi;
-  }
-
-  if (regime === 'lucro-real') {
+  // Obter base presumida para lucro-presumido
+  let basePresumidaIRPJ = 32;
+  let basePresumidaCSLL = 32;
+  
+  if (regime === 'lucro-presumido') {
+    const basePresumida = getBasePresumida(params.atividadePrincipal, params.cnaePrincipal);
+    basePresumidaIRPJ = basePresumida.irpj;
+    basePresumidaCSLL = basePresumida.csll;
+    
+    // IRPJ/CSLL sobre base presumida (não sobre faturamento total)
+    cargas.irpj = baseFaturamento * (basePresumidaIRPJ / 100) * (aliquotas.irpj / 100);
+    cargas.csll = baseFaturamento * (basePresumidaCSLL / 100) * (aliquotas.csll / 100);
+    
+    // PIS/COFINS não cumulativos mesmo no Presumido (opcional - depende da atividade)
+    // Para simplificação, mantemos cumulativos no Presumido, não cumulativos no Real
+    // TODO: Implementar não-cumulatividade parcial para Presumido conforme atividade
+    
+  } else if (regime === 'lucro-real') {
     // No lucro real, PIS/COFINS são não cumulativos - estimamos crédito de ~30% sobre compras
     const creditoEstimado = baseFaturamento * 0.3 * 0.0925; // 30% do faturamento * 9.25% (PIS+COFINS)
     cargas.pis = Math.max(0, cargas.pis - creditoEstimado * 0.178); // proporcional PIS
     cargas.cofins = Math.max(0, cargas.cofins - creditoEstimado * 0.822); // proporcional COFINS
-    cargas.total = cargas.irpj + cargas.csll + cargas.pis + cargas.cofins + cargas.cpp + cargas.icms + cargas.iss + cargas.ipi;
   }
+  
+  // Recalcular total após ajustes
+  cargas.total = cargas.irpj + cargas.csll + cargas.pis + cargas.cofins + cargas.cpp + cargas.icms + cargas.iss + cargas.ipi;
 
   return {
     regime,

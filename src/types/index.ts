@@ -258,6 +258,7 @@ export interface ParametrosEmpresa {
   uf: string;
   municipio: string;
   atividadePrincipal: 'comercio' | 'industria' | 'servicos' | 'misto';
+  cnaePrincipal?: string; // CNAE principal para base presumida
   anexoSimples?: 'I' | 'II' | 'III' | 'IV' | 'V';
   // Alíquotas manuais para simulação (opcional - sobrescreve catálogo)
   aliquotaCbsManual?: number; // % CBS
