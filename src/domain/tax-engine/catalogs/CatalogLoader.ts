@@ -274,7 +274,10 @@ export function calcularImpostoSeletivo(
   item: { valorTotal: number; quantidade: number; unidade: string; ncm: string },
   catalogoSeletivo: any[]
 ): { valor: number; detalhe: string } | null {
-  const regra = buscarImpostoSeletivo({ impostoSeletivo: new Map(catalogoSeletivo.map(c => [c.ncmPrefix, c])) }, item.ncm);
+  const regra = buscarImpostoSeletivo(
+    { ncms: new Map(), impostoSeletivo: new Map(catalogoSeletivo.map(c => [c.ncmPrefix, c])), cashback: new Map(), cfops: new Map(), creditos: new Map(), aliquotasAno: new Map(), versoes: new Map(), dataCarregamento: new Date() } as CatalogosCarregados,
+    item.ncm
+  );
   if (!regra) return null;
 
   let valor = 0;

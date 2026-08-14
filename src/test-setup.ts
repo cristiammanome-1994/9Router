@@ -1,9 +1,6 @@
 // Test setup file
 import { vi } from 'vitest';
 
-// Mock fetch globally
-global.fetch = vi.fn();
-
 // Mock fetch para catálogos
 global.fetch = vi.fn((url: string) => {
   if (url.includes('ncm-cbs-ibs-2026.json')) {
@@ -108,7 +105,7 @@ global.fetch = vi.fn((url: string) => {
   }
 
   return Promise.resolve({ ok: false, status: 404 });
-});
+}) as any;
 
 // Mock console.warn/error para não poluir output dos testes
 const originalWarn = console.warn;
@@ -126,5 +123,5 @@ afterAll(() => {
 
 // Polyfill para fetch em testes
 if (!global.fetch) {
-  global.fetch = vi.fn();
+  global.fetch = vi.fn() as any;
 }

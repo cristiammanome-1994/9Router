@@ -7,7 +7,7 @@ import type {
   ParametrosSimulacao,
   NCMConfig,
   CFOPConfig,
-} from './types';
+} from '../types';
 
 export class CreditEngine {
   private creditosConfig: CreditoConfig[] = [];
@@ -76,7 +76,7 @@ export class CreditEngine {
     const cfopConfig = this.cfopsConfig.get(item.cfop);
 
     // Verifica se a operação gera crédito
-    const creditoConfig = this.buscarConfigCredito(item.ncm, item.cfop, item.auditoria.tipoOperacao);
+    const creditoConfig = this.buscarConfigCredito(item.ncm, item.cfop, item.tipoOperacao || (item.auditoria as any)?.tipoOperacao);
 
     const detalhesCBS: string[] = [];
     const detalhesIBS: string[] = [];
@@ -193,8 +193,8 @@ export class CreditEngine {
    */
   getNCMsComCredito(): string[] {
     return this.creditosConfig
-      .filter(c => c.geraCreditoCBS || c.geraCreditoIBS)
-      .map(c => c.ncmPrefix);
+      .filter(c => (c.geraCreditoCBS || c.geraCreditoIBS) && c.ncmPrefix)
+      .map(c => c.ncmPrefix) as string[];
   }
 
   /**

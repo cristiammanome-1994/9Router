@@ -6,10 +6,10 @@ export interface NCMConfig {
   descricao: string;
   cbs: number;
   ibs: number;
-  ibsEstadual: number;
-  ibsMunicipal: number;
-  cashback: number;
-  tipo: 'zero' | 'reduzida' | 'padrao' | 'seletivo';
+  ibsEstadual?: number;
+  ibsMunicipal?: number;
+  cashback?: number;
+  tipo?: 'zero' | 'reduzida' | 'padrao' | 'seletivo';
   anexo?: string;
   icmsSt?: boolean; // Se o NCM geralmente tem ICMS-ST
 }
@@ -25,14 +25,15 @@ export interface ImpostoSeletivoConfig {
 
 export interface CFOPConfig {
   cfop: string;
-  descricao: string;
+  descricao?: string;
   tipoOperacao: 'venda_interna' | 'venda_interestadual' | 'exportacao' | 'devolucao' | 'transferencia' | 'entrada' | 'saida' | 'outra';
   geraCreditoCBS: boolean;
   geraCreditoIBS: boolean;
-  incideCBS: boolean;
-  incideIBS: boolean;
-  incideIS: boolean;
-  regimeEspecial?: 'exportacao' | 'devolucao' | 'transferencia' | 'zona_franca' | 'simples' | 'imune';
+  incideCBS?: boolean;
+  incideIBS?: boolean;
+  incideIS?: boolean;
+  fluxo?: 'entrada' | 'saida';
+  regimeEspecial?: 'simples' | 'exportacao' | 'devolucao' | 'transferencia' | 'zona_franca' | 'imune' | 'area_livre' | 'suspensao' | 'importacao' | 'st' | 'difal' | 'fcp';
 }
 
 export interface AliquotasAno {
@@ -55,7 +56,7 @@ export interface AliquotasAno {
 }
 
 export interface CreditoConfig {
-  ncmPrefix: string;
+  ncmPrefix?: string;
   cfop?: string;
   tipoOperacao?: string;
   geraCreditoCBS: boolean;

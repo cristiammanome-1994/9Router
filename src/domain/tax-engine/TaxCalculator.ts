@@ -7,13 +7,14 @@ import type {
   NCMConfig,
   CFOPConfig,
   BaseCalculoItem,
-} from '../types';
-import { CreditEngine } from '../credits/CreditEngine';
-import { IBSDualCalculator } from '../calculators/IBSDualCalculator';
-import { BaseCalculator } from '../calculators/BaseCalculator';
-import { CFOPClassifier } from '../classifications/CFOPClassifier';
-import { TransitionCalculator } from '../scenarios/TransitionCalculator';
-import { CatalogLoader, CatalogosCarregados } from '../catalogs/CatalogLoader';
+} from './types';
+import { CreditEngine } from './credits/CreditEngine';
+import { IBSDualCalculator } from './calculators/IBSDualCalculator';
+import { BaseCalculator } from './calculators/BaseCalculator';
+import { CFOPClassifier } from './classifications/CFOPClassifier';
+import { TransitionCalculator } from './scenarios/TransitionCalculator';
+import { carregarCatalogos, buscarNCM as buscarNCMCatalog, buscarImpostoSeletivo as buscarImpostoSeletivoCatalog, buscarCashback as buscarCashbackCatalog } from './catalogs/CatalogLoader';
+import type { CatalogosCarregados } from './catalogs/CatalogLoader';
 
 export class TaxCalculator {
   private creditEngine: CreditEngine;
@@ -40,7 +41,7 @@ export class TaxCalculator {
       return;
     }
 
-    const catalogos = await CatalogLoader.carregarCatalogos(ano);
+    const catalogos = await carregarCatalogos(ano);
     this.catalogos = catalogos;
     this.catalogosCarregados = true;
 
@@ -96,7 +97,7 @@ export class TaxCalculator {
 
     // 4. Buscar alíquotas NCM do catálogo (C04)
     const ncmConfig = this.catalogos 
-      ? CatalogLoader.buscarNCM(this.catalogos, ncm)
+      ? buscarNCMCatalog(this.catalogos, ncm)
       : { cbs: 9.65, ibs: 9.65, ibsEstadual: 4.825, ibsMunicipal: 4.825, descricao: 'Padrão (fallback)', tipo: 'padrao', cashback: 0, ncmEncontrado: false };
 
     // 5. Obter alíquotas do ano de transição (C03)
@@ -112,7 +113,7 @@ export class TaxCalculator {
 
     // 6. Buscar Imposto Seletivo (C05)
     const isConfig = this.catalogos 
-      ? CatalogLoader.buscarImpostoSeletivo(this.catalogos, ncm)
+      ? buscarImpostoSeletivoCatalog(this.catalogos, ncm)
       : null;
     const aliquotaIS = isConfig?.aliquotaAdValorem || 0;
 
@@ -186,6 +187,10 @@ export class TaxCalculator {
       ibsEstadualLiquida: 0,
       ibsMunicipalLiquida: 0,
       isLiquida: 0,
+      creditoCBS: 0,
+      creditoIBS: 0,
+      creditoCBSDetalhe: '',
+      creditoIBSDetalhe: '',
       totalCBS_IBS: 0,
       totalComIS: 0,
       tipoOperacao,
@@ -214,7 +219,7 @@ export class TaxCalculator {
 
     // 13. Cashback (apenas informativo)
     const cashbackPct = this.catalogos 
-      ? CatalogLoader.buscarCashback(this.catalogos, ncm)
+      ? buscarCashbackCatalog(this.catalogos, ncm)
       : 0;
 
     // 14. Montar resultado

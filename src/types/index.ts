@@ -266,6 +266,36 @@ export interface ParametrosEmpresa {
   usarAliquotasManuais?: boolean; // Flag para usar valores manuais
 }
 
+export interface CFOPConfig {
+  cfop: string;
+  descricao: string;
+  tipoOperacao: 'venda_interna' | 'venda_interestadual' | 'exportacao' | 'devolucao' | 'transferencia' | 'entrada' | 'saida' | 'outra';
+  geraCreditoCBS: boolean;
+  geraCreditoIBS: boolean;
+  incideCBS: boolean;
+  incideIBS: boolean;
+  incideIS: boolean;
+  fluxo: 'entrada' | 'saida';
+  regimeEspecial?: 'simples' | 'exportacao' | 'devolucao' | 'transferencia' | 'zona_franca' | 'area_livre' | 'suspensao' | 'importacao' | 'st' | 'difal' | 'fcp';
+}
+
+export interface CreditoConfig {
+  ncmPrefix: string;
+  cnaePrefix?: string;
+  atividade?: string;
+  percentualCreditoPIS: number; // % sobre base de crédito
+  percentualCreditoCOFINS: number; // % sobre base de crédito
+  descricao: string;
+  // Condições
+  condicoes?: {
+    regimeEmitente?: string[]; // regimes que geram crédito
+    regimeDestinatario?: string[]; // regimes que permitem crédito
+    operacoesElegiveis?: string[]; // CFOP elegíveis
+    ufOrigem?: string[];
+    ufDestino?: string[];
+  };
+}
+
 export interface SimulacaoRegime {
   regime: RegimeTributario;
   nome: string;

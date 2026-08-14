@@ -1,5 +1,6 @@
 // Testes para CreditEngine - C01: Não-cumulatividade CBS/IBS
 import { CreditEngine } from '../credits/CreditEngine';
+import type { CFOPConfig } from '../types';
 
 describe('CreditEngine - C01: Não-cumulatividade CBS/IBS', () => {
   let creditEngine: CreditEngine;
@@ -48,7 +49,7 @@ describe('CreditEngine - C01: Não-cumulatividade CBS/IBS', () => {
     { ncmPrefix: '2202', cbs: 9.65, ibs: 9.65, descricao: 'Refrigerantes' },
   ];
 
-  const cfopsConfig = [
+  const cfopsConfig: CFOPConfig[] = [
     { cfop: '1101', geraCreditoCBS: true, geraCreditoIBS: true, tipoOperacao: 'entrada' },
     { cfop: '1102', geraCreditoCBS: true, geraCreditoIBS: true, tipoOperacao: 'entrada' },
     { cfop: '5101', geraCreditoCBS: false, geraCreditoIBS: false, tipoOperacao: 'venda_interna' },

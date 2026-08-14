@@ -126,7 +126,7 @@ const ALIQUOTAS_LUCRO_REAL: AliquotasRegime = {
 };
 
 // Função para obter base presumida por atividade/CNAE
-function getBasePresumida(atividade: string, cnae?: string): { irpj: number; csll: number } {
+export function getBasePresumida(atividade: string, cnae?: string): { irpj: number; csll: number } {
   // Se tiver CNAE, tentar buscar por código
   if (cnae) {
     const cnaePrefix = cnae.replace(/\D/g, '').substring(0, 4);
